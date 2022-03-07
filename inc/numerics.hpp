@@ -48,11 +48,10 @@ class HexaDecimal {
 	/// Conversion to the hexadecimal textual representation of this number. Initializing it, if it wasn't in before.
 	operator std::string() {
 		if (text.empty() && num != 0) {
-			text.back() = '\0';
-			auto tmp	= num;
-			for (auto byte = text.rbegin() + 1; byte != text.rend(); ++byte) {
-				*byte = hexLetters[tmp & 0xF];
-				tmp >> 4;
+			text.reserve(BITS / 4);
+			for (auto shift = BITS - 4; shift >= 0; shift -= 4) {
+				const auto hex = (num >> shift) & 0xF;
+				text.push_back(hexLetters[hex]);
 			}
 		}
 		return text;
