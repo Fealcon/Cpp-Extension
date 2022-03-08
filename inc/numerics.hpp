@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include <stdint.h>
 #include <string>
 #include <sys/types.h>
@@ -28,6 +29,9 @@ class HexaDecimal {
 	std::string		   text;	///< hexadecimal textual representation of this number.
 	uint_least< BITS > num;		///< the plain number
 
+	std::mutex num_lock;
+	std::mutex text_lock;
+
   public:
 	/*!
 	 * \brief HexaDecimal conversion from a std::string.
@@ -36,6 +40,11 @@ class HexaDecimal {
 	constexpr HexaDecimal(const std::string &s)
 		: text(s),
 		  num(0) {}
+
+	/// copy constructor
+	constexpr HexaDecimal(const HexaDecimal &other)
+		: text(other.text),
+		  num(other.num) {}
 
 	/*!
 	 * \brief HexaDecimal conversion from a number.
@@ -47,19 +56,34 @@ class HexaDecimal {
 
 	/// Conversion to the hexadecimal textual representation of this number. Initializing it, if it wasn't in before.
 	operator std::string() {
-		if (text.empty() && num != 0) {
-			text.reserve(BITS / 4);
-			for (auto shift = BITS - 4; shift >= 0; shift -= 4) {
-				const auto hex = (num >> shift) & 0xF;
-				text.push_back(hexLetters[hex]);
+		if (text_lock.try_lock()) {
+			// if its not locked, we can check and set it (if needed)
+			if (text.empty() && num != 0) {
+				text.reserve(BITS / 4);
+				for (int_fast8_t shift = BITS - 4;; shift -= 4) {
+					const auto hex = (num >> shift) & 0xF;
+					text.push_back(hexLetters[hex]);
+					if (shift == 0) {
+						break;
+					}
+				}
 			}
+			text_lock.unlock();
+		} else {
+			// else we will wait for the lock to be done
+			std::scoped_lock {text_lock};
 		}
 		return text;
 	}
 	/// Conversion to the plain number. Initializing it, if it wasn't in before.
 	constexpr operator uint_least< BITS >() {
-		if (num == 0 && !text.empty()) {
-			num = strtoul(text.data(), nullptr, 16);
+		if (num_lock.try_lock()) {
+			if (num == 0 && !text.empty()) {
+				num = strtoul(text.data(), nullptr, 16);
+			}
+			num_lock.unlock();
+		} else {
+			std::scoped_lock {num_lock};
 		}
 		return num;
 	}
