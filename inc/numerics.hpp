@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mutex>
 #include <stdint.h>
 #include <string>
 #include <sys/types.h>
@@ -26,67 +25,50 @@ class HexaDecimal {
 
 	static constexpr char hexLetters[] = "0123456789ABCDEF";	///< number to hex map
 
-	std::string		   text;	///< hexadecimal textual representation of this number.
-	uint_least< BITS > num;		///< the plain number
-
-	std::mutex num_lock;
-	std::mutex text_lock;
+	char			   text[BITS / 4 + 1];	  ///< hexadecimal textual representation of this number.
+	uint_least< BITS > num;					  ///< the plain number
 
   public:
+	/*!
+	 * \brief HexaDecimal conversion from a char pointer.
+	 * \param s Sets the textual representation.
+	 */
+	constexpr HexaDecimal(const char *s) {
+		for (auto i = 0; i < sizeof(text) - 2; ++i) {
+			text[i] = s[i];
+		}
+		text[sizeof(text) - 1] = '\0';
+
+		num = strtoul(text, nullptr, 16);
+	}
+
 	/*!
 	 * \brief HexaDecimal conversion from a std::string.
 	 * \param s Sets the textual representation.
 	 */
 	constexpr HexaDecimal(const std::string &s)
-		: text(s),
-		  num(0) {}
-
-	/// copy constructor
-	constexpr HexaDecimal(const HexaDecimal &other)
-		: text(other.text),
-		  num(other.num) {}
+		: HexaDecimal(s.data()) {}
 
 	/*!
 	 * \brief HexaDecimal conversion from a number.
 	 * \param n Sets the number.
 	 */
 	constexpr HexaDecimal(uint_least< BITS > n)
-		: text(),
-		  num(n) {}
-
-	/// Conversion to the hexadecimal textual representation of this number. Initializing it, if it wasn't in before.
-	operator std::string() {
-		std::unique_lock lock(text_lock, std::defer_lock);
-		if (lock.try_lock()) {
-			// if its not locked, we can check and set (if needed)
-			if (text.empty() && num != 0) {
-				text.reserve(BITS / 4);
-				for (int_fast8_t shift = BITS - 4;; shift -= 4) {
-					const auto hex = (num >> shift) & 0xF;
-					text.push_back(hexLetters[hex]);
-					if (shift == 0) {
-						break;
-					}
-				}
-			}
-		} else {
-			// else we will wait for the lock to be done
-			lock.lock();
+		: num(n) {
+		for (auto c = 0; c < BITS / 4; ++c) {
+			const auto shift = BITS - (c + 1) * 4;
+			const auto hex	 = (num >> shift) & 0xF;
+			text[c]			 = hexLetters[hex];
 		}
-		lock.unlock();
+		text[sizeof(text) - 1] = '\0';
+	}
+
+	/// Conversion to the hexadecimal textual representation of this number.
+	constexpr operator const char *() const {
 		return text;
 	}
-	/// Conversion to the plain number. Initializing it, if it wasn't in before.
-	operator uint_least< BITS >() {
-		std::unique_lock lock(num_lock, std::defer_lock);
-		if (lock.try_lock()) {
-			if (num == 0 && !text.empty()) {
-				num = strtoul(text.data(), nullptr, 16);
-			}
-		} else {
-			lock.lock();
-		}
-		lock.unlock();
+	/// Conversion to the plain number.
+	constexpr operator uint_least< BITS >() const {
 		return num;
 	}
 };
