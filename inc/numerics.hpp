@@ -56,8 +56,9 @@ class HexaDecimal {
 
 	/// Conversion to the hexadecimal textual representation of this number. Initializing it, if it wasn't in before.
 	operator std::string() {
-		if (text_lock.try_lock()) {
-			// if its not locked, we can check and set it (if needed)
+		std::unique_lock lock(text_lock, std::defer_lock);
+		if (lock.try_lock()) {
+			// if its not locked, we can check and set (if needed)
 			if (text.empty() && num != 0) {
 				text.reserve(BITS / 4);
 				for (int_fast8_t shift = BITS - 4;; shift -= 4) {
@@ -68,23 +69,24 @@ class HexaDecimal {
 					}
 				}
 			}
-			text_lock.unlock();
 		} else {
 			// else we will wait for the lock to be done
-			std::scoped_lock {text_lock};
+			lock.lock();
 		}
+		lock.unlock();
 		return text;
 	}
 	/// Conversion to the plain number. Initializing it, if it wasn't in before.
-	constexpr operator uint_least< BITS >() {
-		if (num_lock.try_lock()) {
+	operator uint_least< BITS >() {
+		std::unique_lock lock(num_lock, std::defer_lock);
+		if (lock.try_lock()) {
 			if (num == 0 && !text.empty()) {
 				num = strtoul(text.data(), nullptr, 16);
 			}
-			num_lock.unlock();
 		} else {
-			std::scoped_lock {num_lock};
+			lock.lock();
 		}
+		lock.unlock();
 		return num;
 	}
 };
