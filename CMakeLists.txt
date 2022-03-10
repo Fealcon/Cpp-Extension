@@ -8,6 +8,7 @@ SET(SOURCES logger
 set(HEADERS textuals
 			logger
 			numerics
+                        pointers
 	)
 
 SET(VERSION_MAIN 0)
