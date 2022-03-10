@@ -34,7 +34,7 @@ class HexaDecimal {
 	 * \param s Sets the textual representation.
 	 */
 	constexpr HexaDecimal(const char *s) {
-		for (auto i = 0; i < sizeof(text) - 2; ++i) {
+		for (auto i = 0; i < sizeof(text) - 1; ++i) {
 			text[i] = s[i];
 		}
 		text[sizeof(text) - 1] = '\0';
