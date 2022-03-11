@@ -1,17 +1,15 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdump-tree-all")
+project(cpp_ext VERSION 0.1.0)
 
-SET(PROJECT_NAME "cpp_ext")
-SET(SOURCES logger
-	)
-set(HEADERS textuals
-			logger
-			numerics
-                        pointers
-	)
+add_compile_options(-fdump-tree-all)
 
-SET(VERSION_MAIN 0)
-SET(VERSION_SUB 1.0)
+SET(SOURCES logger.cpp
+	)
+set(HEADERS textuals.hpp
+			logger.hpp
+			numerics.hpp
+			pointers.hpp
+	)
 
 include(../Libraries.cmake)
