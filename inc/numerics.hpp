@@ -56,7 +56,7 @@ class HexaDecimal {
 	constexpr HexaDecimal(uint_least< BITS > n)
 		: num(n) {
 		for (auto c = 0; c < BITS / 4; ++c) {
-			const auto shift = BITS - (c + 1) * 4;
+			const auto shift = BITS - 4 - (c * 4);
 			const auto hex	 = (num >> shift) & 0xF;
 			text[c]			 = hexLetters[hex];
 		}

@@ -26,7 +26,7 @@ class CharArray : public std::array< char, N > {
 	/// Conversion from a std::string
 	CharArray(const std::string &s)
 		: CharArray(s.data()) {}
-	/// Conversion from a std::string
+	/// Conversion to a std::string
 	operator std::string() {
 		return this->data();
 	}
@@ -56,7 +56,7 @@ class StaticString {
 		  length(CalcLength(string)) {}
 
 	/// Convert back to a char pointer to enable usage like a usual string literal.
-	operator const char *() {
+	constexpr operator const char *() {
 		return str;
 	}
 
@@ -68,7 +68,7 @@ class StaticString {
 
 	/// Convert to a CharArray.
 	template< uint N >
-	operator CharArray< N >() {
+	constexpr operator CharArray< N >() {
 		return CharArray< N >(str);
 	}
 };
